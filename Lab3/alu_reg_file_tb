@@ -1,0 +1,151 @@
+module alu_reg_file_tb(
+
+);
+  logic clk,
+  logic rst,
+  logic reg_write;
+  logic [2:0] rd0_addr,
+  logic [2:0] rd1_addr,
+  logic [2:0] wr_addr,
+  logic [15:0] wr_data,
+
+  logic [15:0] rd0_data;
+  logic [15:0] rd1_data;
+
+  logic [15:0] alu_input2_instr_src;
+  logic ALUSrc1;
+  logic ALUSrc2; 
+
+  logic [3:0] ALUOp;
+  logic [15:0] result;
+  logic [15:0] input1;
+  logic [15:0] input2;
+  logic ovf; 
+  logic take_branch;
+  logic [15:0] zero;
+
+  assign zero = 16'b00000000_00000000;
+
+  reg_file file(.ret(ret), .clk(clk), .rd0_addr(rd0_addr), .rd1_addr(rd1_addr), .wr_addr(wr_addr), .wr_data(wr_data), .rd0_data(rd0_data), .rd1_data(rd1_data), .wr_en(reg_write)); 
+
+  mux mux0(.a(rd0_data), .b(zero), .sel_mux(ALUSrc1), .out(input1)); 
+  mux mux1(.a(rd1_data), .b(alu_input2_instr_src), .sel_mux(ALUSrc2), .out(input2));
+
+  alu UUT(.a(input1), .b(input2), .s(ALUOps), .f(result), .ovf(ovf), .take_branch(take_branch));
+
+   
+  initial begin 
+    clk = 0; 
+
+    
+    // Provided prelab test cases 
+    rst = 1; 
+    reg_write = 0; 
+    ALUSrc1 = 1; 
+    ALUSrc2 = 1; 
+    ALUOp = 0; 
+    alu_input2_instr_src = 12; 
+
+    #100
+    rst = 0;
+    reg_write = 1; 
+    wr_addr = 0; 
+    wr_data = result;
+
+    #100 
+    reg_write = 1; 
+    wr_addr = 7; 
+    wr_data = result;
+
+    #100 
+    reg_write  = 0; 
+    ALUSrc1 = 0; 
+    ALUSrc2 = 0;
+    rd0_addr = 0; 
+    rd1_addr = 7;
+    ALUOp = 0;
+
+    #100
+    reg_write = 1; 
+    wr_addr = 5; 
+    wr_data = result;
+    // End of prelab test cases 
+
+
+
+    // Invert 0
+    #100 
+    reg_write = 0;
+    ALUSrc2 = 1;
+    alu_input2_instr_src = 0;
+    ALUOp = 1;
+
+    // FFFF & F0F0
+    #100 
+    reg_write = 1;
+    wr_addr = 1; 
+    wr_data = 16'hFFFF;
+    ALUSrc1 = 0; 
+    ALUSrc2 = 1;
+    rd0_addr = 1;
+    alu_input2_instr_src = 16'hF0F0;
+    ALUOp = 2;
+
+    // FFFF | 0
+    #100 
+    reg_write = 0;
+    ALUSrc1 = 1;
+    ALUSrc2 = 0;
+    rd1_addr = 1; 
+    ALUOp = 3;
+
+
+    // F000 right shift by 4 bits
+    #100
+    reg_write = 1;
+    wr_addr = 2;
+    wr_data = 16'hF000;
+    ALUSrc1 = 0;
+    ALUSrc2 = 1;
+    rd0_addr = 2;
+    alu_input2_instr_src = 4;
+    ALUOp = 4;
+
+    // 000F left shift by 4 bits
+    #100
+    reg_write = 1;
+    wr_addr = 2;
+    wr_data = 16'h000F;
+    ALUSrc1 = 0;
+    ALUSrc2 = 1;
+    rd0_addr = 2;
+    alu_input2_instr_src = 4;
+    ALUOp = 5;
+
+    // beqz a = 0
+    #100 
+    reg_write = 0; 
+    ALUSrc1 = 1; 
+    ALUOp = 6; 
+
+    // bnez a = 0
+    #100  
+    reg_write = 0; 
+    ALUSrc1 = 1; 
+    ALUOp = 7; 
+
+    // ovf flag
+    #100 
+    reg_write = 1;
+    wr_addr = 2;
+    wr_data = 16'hA415;
+    ALUSrc1 = 0;
+    ALUSrc2 = 1;
+    rd0_addr = 2;
+    alu_input2_instr_src = 16'hA555;
+    ALUOp = 0;
+  end
+  // Clock ticks 
+  always #10 clk = ~clk;
+
+endmodule
